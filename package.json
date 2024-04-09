@@ -1,0 +1,38 @@
+{
+  "name": "twitter-enhanced-muted-words",
+  "version": "1.0.0",
+  "description": "Enhanced twitter post hider with regex",
+  "private": true,
+  "main": "./dist/discordBlocker.user.js",
+  "types": "./lib/Main.d.ts",
+  "scripts": {
+    "compile-dev": "webpack --env development",
+    "compile-prod": "webpack --env production",
+    "update_deps": "npx npm-check-updates"
+  },
+  "keywords": [],
+  "author": "Victoria",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^8.57.0",
+    "@types/greasemonkey": "^4.0.7",
+    "@types/md5": "^2.3.5",
+    "css-loader": "^7.1.0",
+    "eslint": "^8.57.0",
+    "prettier": "3.2.5",
+    "source-map-loader": "^5.0.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.4",
+    "typescript-eslint": "^7.4.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@trim21/gm-fetch": "^0.1.15",
+    "md5": "^2.3.0",
+    "reflect-metadata": "^0.2.2",
+    "terser-webpack-plugin": "^5.3.10",
+    "tsyringe": "^4.8.0"
+  }
+}
