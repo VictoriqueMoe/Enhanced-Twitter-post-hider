@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Enhanced twitter post hider with regex",
   "private": true,
-  "main": "./dist/discordBlocker.user.js",
+  "main": "./dist/twitter-enhanced-muted-words.user.js",
   "types": "./lib/Main.d.ts",
   "scripts": {
     "compile-dev": "webpack --env development",

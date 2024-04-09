@@ -44,7 +44,7 @@ module.exports = env => {
         ],
         output: {
             path: path.join(__dirname, "dist"),
-            filename: `discordBlockedMessageRemover.user${development === false ? ".min" : ""}.js`,
+            filename: `twitter-enhanced-muted-words.user${development === false ? ".min" : ""}.js`,
             libraryTarget: "umd",
             library: "twitter-enhanced-muted-words",
             globalObject: 'this'

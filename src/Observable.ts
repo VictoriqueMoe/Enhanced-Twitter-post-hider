@@ -1,6 +1,6 @@
 export interface Observable {
     /**
-     * Trigger this method when a discord message is sent
+     * Trigger this method when a new post is show on the timeline
      * @param {MutationRecord[]} mutationList
      * @param {MutationObserver} observer
      */
