@@ -5,6 +5,7 @@
   "private": true,
   "main": "./dist/twitter-enhanced-muted-words.user.js",
   "types": "./lib/Main.d.ts",
+  "type": "module",
   "scripts": {
     "compile-dev": "webpack --env development",
     "compile-prod": "webpack --env production",

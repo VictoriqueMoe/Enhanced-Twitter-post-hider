@@ -1,11 +1,15 @@
 import { singleton } from "tsyringe";
-import { TwitterMutator } from "./TwitterMutator.js";
+import { Action } from "./typings.js";
+import { PostConstruct } from "./decorators/PostConstruct.js";
 
 @singleton()
 export class PageInterceptor {
-    public constructor(private _twitterProxy: TwitterMutator) {}
+    public constructor() {}
 
-    public pageChange(callBack: (mutation: MutationRecord) => void): void {
+    private readonly actions: Action[] = [];
+
+    @PostConstruct
+    private init(): void {
         window.addEventListener(
             "load",
             () => {
@@ -15,11 +19,10 @@ export class PageInterceptor {
                     return;
                 }
                 const observer = new MutationObserver(async mutations => {
-                    for (const mutation of mutations) {
-                        if (oldHref !== document.location.href) {
-                            oldHref = document.location.href;
-                            await this._twitterProxy.init();
-                            callBack(mutation);
+                    if (oldHref !== document.location.href) {
+                        oldHref = document.location.href;
+                        for (const action of this.actions) {
+                            action();
                         }
                     }
                 });
@@ -29,26 +32,7 @@ export class PageInterceptor {
         );
     }
 
-    public waitForPage(url: string, callBack: (doc: typeof document) => void): void {
-        window.addEventListener(
-            "load",
-            () => {
-                const body = document.querySelector("body");
-                if (!body) {
-                    return;
-                }
-                const observer = new MutationObserver(mutations => {
-                    const page = window.location.pathname.split("/").pop();
-                    for (const mutation of mutations) {
-                        if (url === page) {
-                            callBack(document);
-                            return;
-                        }
-                    }
-                });
-                observer.observe(body, { childList: true, subtree: true });
-            },
-            true,
-        );
+    public addAction(action: Action): void {
+        this.actions.push(action);
     }
 }

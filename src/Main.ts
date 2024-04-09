@@ -1,19 +1,20 @@
 import "reflect-metadata";
 import { container, singleton } from "tsyringe";
-import { Observable } from "./Observable.js";
 import { UiBuilder } from "./UiBuilder.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { BlockedWordEntry } from "./typings.js";
-import { TwitterPostEvent } from "./decorators/TwitterPostEvent.js";
+import { TwitterPostEvent, TwitterPostType } from "./decorators/TwitterPostEvent.js";
 import { PostConstruct } from "./decorators/PostConstruct.js";
 import { PageInterceptor } from "./PageInterceptor.js";
-import { waitForElm } from "./Utils.js";
+import { timelineWrapperSelector, waitForElm } from "./Utils.js";
+import { TwitterMutator } from "./TwitterMutator.js";
 
 @singleton()
-class TwitterPostObserver implements Observable {
+class TwitterPostObserver {
     public constructor(
         private uiBuilder: UiBuilder,
         private localStoreManager: LocalStoreManager,
+        private twitterMutator: TwitterMutator,
     ) {
         uiBuilder.injectContent();
     }
@@ -52,14 +53,14 @@ class TwitterPostObserver implements Observable {
         });
     }
 
-    @TwitterPostEvent
-    public async observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
+    @TwitterPostEvent(TwitterPostType.TIMELINE)
+    public async processTimelinePost(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
         const elmsToRemovePArray = mutationList.flatMap(async mutationRecord => {
             const retArr: Element[] = [];
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
-                const addedMessage = mutationRecord.addedNodes[i] as HTMLElement;
-                if (await this.shouldRemove(addedMessage)) {
-                    retArr.push(addedMessage);
+                const newTimelinePost = mutationRecord.addedNodes[i] as HTMLElement;
+                if (await this.shouldRemove(newTimelinePost)) {
+                    retArr.push(newTimelinePost);
                 }
             }
             return retArr;
@@ -72,32 +73,35 @@ class TwitterPostObserver implements Observable {
     private async init(): Promise<void> {
         const location = window.location.pathname.split("/").pop();
         const pageInterceptor = container.resolve(PageInterceptor);
-        pageInterceptor.pageChange(async () => {
-            await this.loadPage();
+
+        pageInterceptor.addAction(async () => {
+            const location = window.location.pathname.split("/").pop();
+            await this.twitterMutator.init();
+            if (location === "home") {
+                await this.loadPage();
+            }
         });
+
         if (location === "home") {
             await this.loadPage();
         }
-        pageInterceptor.waitForPage("mute_and_block", async doc => {
-            const group = await waitForElm("section[aria-label='Section details'] > div:last-child");
-            if (!group) {
+        pageInterceptor.addAction(async () => {
+            const page = window.location.pathname.split("/").pop();
+            if (page !== "mute_and_block") {
                 return;
             }
-            const anchor = this.uiBuilder.buildOption(group);
+            const anchor = this.uiBuilder.buildOption();
             if (!anchor) {
                 return;
             }
-            const insertAfter = group.querySelector("a:nth-child(4)");
-            if (!insertAfter) {
-                return;
-            }
+            const insertAfter = await waitForElm("a[href='/settings/muted_keywords']");
             insertAfter.after(anchor);
         });
     }
 
     private async loadPage(): Promise<void> {
-        const timelineContainer = await waitForElm(`[aria-label*='Home Timeline'] > div[style^='position: relative']`);
-        if (!timelineContainer?.children) {
+        const timelineContainer = await waitForElm(timelineWrapperSelector);
+        if (!timelineContainer.children) {
             return;
         }
         const toRemove: Element[] = [];

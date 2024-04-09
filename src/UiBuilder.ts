@@ -19,8 +19,8 @@ export class UiBuilder {
         return style;
     }
 
-    public buildOption(group: Element): HTMLAnchorElement | null {
-        const hasEl = group.querySelector("#enhanced_muted_words") !== null;
+    public buildOption(): HTMLAnchorElement | null {
+        const hasEl = document.querySelector("#enhanced_muted_words") !== null;
         if (hasEl) {
             return null;
         }
