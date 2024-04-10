@@ -10,7 +10,14 @@ module.exports = env => {
         entry: "./src/Main.ts",
         module: {
             rules: [
-                { test: /\.([cm]?ts|tsx)$/, loader: "ts-loader" }
+                {
+                    test: /\.([cm]?ts|tsx)$/,
+                    loader: "ts-loader"
+                },
+                {
+                    test: /\.css$/,
+                    use: ['style-loader', 'css-loader']
+                },
             ]
         },
         optimization: {

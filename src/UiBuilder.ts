@@ -1,5 +1,6 @@
 import { singleton } from "tsyringe";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
+import { DomUtil } from "./Utils.js";
 
 @singleton()
 export class UiBuilder {
@@ -39,25 +40,27 @@ export class UiBuilder {
         return a;
     }
 
-    public async getEditor(): Promise<string | null> {
-        if (document.getElementById("#enhancedMutedWordsDialog")) {
-            return null;
+    public async getEditor(): Promise<[HTMLElement, boolean]> {
+        const existingModel = document.getElementById("#enhancedMutedWordsDialog");
+        if (existingModel) {
+            return [existingModel, true];
         }
-        const allMutedWords = await this.localStoreManager.getAllStoredWords();
-        let currentMutedWords = "";
-        if (!allMutedWords || allMutedWords.length === 0) {
-            currentMutedWords = "<p>No Muted Words</p>";
-        } else {
-            currentMutedWords = allMutedWords.map(word => `<p>${word.phrase}</p>`).join("<br />");
-        }
-        return `
-        <dialog open id="enhancedMutedWordsDialog">
-            <span>Currently muted words:</span>
-            ${currentMutedWords}
-            <form method="dialog">
-                <button>Save</button>
-            </form>
-        </dialog>
-        `;
+        const modal = DomUtil.createModal({
+            id: "enhancedMutedWordsDialog",
+            body: ((): string => {
+                let html = "";
+                html += '<label for="tagInput">Blocked word input here:</label>';
+                html += '<input id="tagInput" />';
+                html += "<div class='filterOptionSection' data-type='exclude' id='excludeFilterSection'></div>";
+                return html;
+            })(),
+            title: "Enhanced Muted words",
+            modalBodyStyle: {
+                height: "auto",
+                overflow: "auto",
+            },
+            footer: `<button class="button blackButton fetishOptionsConfirm apply">Apply</button>`,
+        });
+        return [modal, false];
     }
 }

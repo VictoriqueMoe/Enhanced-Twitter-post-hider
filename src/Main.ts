@@ -6,8 +6,9 @@ import { BlockedWordEntry } from "./typings.js";
 import { TwitterPostEvent, TwitterPostType } from "./decorators/TwitterPostEvent.js";
 import { PostConstruct } from "./decorators/PostConstruct.js";
 import { PageInterceptor } from "./PageInterceptor.js";
-import { timelineWrapperSelector, waitForElm } from "./Utils.js";
+import { DomUtil, timelineWrapperSelector, waitForElm } from "./Utils.js";
 import { TwitterMutator } from "./TwitterMutator.js";
+import "./css/modal.css";
 
 @singleton()
 class TwitterPostObserver {
@@ -97,14 +98,20 @@ class TwitterPostObserver {
             const insertAfter = await waitForElm("a[href='/settings/muted_keywords']");
             const container = insertAfter.parentElement!;
             insertAfter.after(anchor);
-            anchor.addEventListener("click", async () => {
-                const html = await this.uiBuilder.getEditor();
-                if (!html) {
-                    return;
-                }
-                insertAfter.insertAdjacentHTML("afterend", html);
+            const modal = await this.buildModal();
+            anchor.addEventListener("click", () => {
+                DomUtil.openModal(modal);
             });
         });
+    }
+
+    private async buildModal(): Promise<HTMLElement> {
+        const [modal, exists] = await this.uiBuilder.getEditor();
+        if (!exists) {
+            const el: HTMLElement = document.body;
+            el.insertAdjacentElement("beforeend", modal);
+        }
+        return modal;
     }
 
     private async loadPage(): Promise<void> {
