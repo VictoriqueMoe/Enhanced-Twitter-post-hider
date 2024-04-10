@@ -55,7 +55,7 @@ class TwitterPostObserver {
 
     @TwitterPostEvent(TwitterPostType.TIMELINE)
     public async processTimelinePost(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
-        const elmsToRemovePArray = mutationList.flatMap(async mutationRecord => {
+        const elmsToRemovePArray = mutationList.map(async mutationRecord => {
             const retArr: Element[] = [];
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
                 const newTimelinePost = mutationRecord.addedNodes[i] as HTMLElement;
@@ -95,7 +95,15 @@ class TwitterPostObserver {
                 return;
             }
             const insertAfter = await waitForElm("a[href='/settings/muted_keywords']");
+            const container = insertAfter.parentElement!;
             insertAfter.after(anchor);
+            anchor.addEventListener("click", async () => {
+                const html = await this.uiBuilder.getEditor();
+                if (!html) {
+                    return;
+                }
+                insertAfter.insertAdjacentHTML("afterend", html);
+            });
         });
     }
 

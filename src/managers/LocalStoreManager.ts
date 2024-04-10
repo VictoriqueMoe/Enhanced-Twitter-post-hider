@@ -20,6 +20,10 @@ export class LocalStoreManager {
         }
     }
 
+    public setBlockedWords(entries: BlockedWordEntry[]): Promise<void> {
+        return this.setItm(entries);
+    }
+
     public getAllStoredWords(): Promise<BlockedWordEntry[] | null> {
         return this.getItm();
     }

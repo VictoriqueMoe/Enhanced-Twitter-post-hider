@@ -18,7 +18,7 @@ export class PageInterceptor {
                 if (!body) {
                     return;
                 }
-                const observer = new MutationObserver(async mutations => {
+                const observer = new MutationObserver(() => {
                     if (oldHref !== document.location.href) {
                         oldHref = document.location.href;
                         for (const action of this.actions) {

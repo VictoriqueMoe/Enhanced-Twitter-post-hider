@@ -19,3 +19,7 @@ export function waitForElm(selector: string, node?: Element): Promise<Element> {
 }
 
 export const timelineWrapperSelector = "[aria-label*='Home Timeline'] > div[style^='position: relative']";
+
+export function toggleHide(hide: boolean, element: HTMLElement): void {
+    hide ? element.classList.add("hidden") : element.classList.remove("hidden");
+}
