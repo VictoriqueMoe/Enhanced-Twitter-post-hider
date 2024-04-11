@@ -1,11 +1,15 @@
 import { constructor } from "tsyringe/dist/typings/types/index.js";
 
+export type storeKeys = "blockedWords" | "audit";
+
 export type BlockedWordEntry = {
     phrase: string;
     options: {
         useRegex: boolean;
     };
 };
+
+export type BlockedWordAudit = Record<string, number>;
 
 export type Observable = (mutationList: MutationRecord[], observer: MutationObserver) => void;
 

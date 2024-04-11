@@ -1,6 +1,6 @@
 {
   "name": "twitter-enhanced-muted-words",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Enhanced twitter post hider with regex",
   "private": true,
   "main": "./dist/twitter-enhanced-muted-words.user.js",
