@@ -51,7 +51,7 @@ To build the code use the following commands.
     npm install
     
 # build userscript
-    npm run compile
+    npm run compile-prod
 ```
 
 To install the code, go to the `dashboard` for `Tampermonkey`, and click on the `+` tab.
