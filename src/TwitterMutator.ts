@@ -51,4 +51,12 @@ export class TwitterMutator {
             childList: true,
         });
     }
+
+    public closeMutators(): void {
+        this.observerProxy?.disconnect();
+    }
+
+    public async openMutators(): Promise<void> {
+        await this.init();
+    }
 }

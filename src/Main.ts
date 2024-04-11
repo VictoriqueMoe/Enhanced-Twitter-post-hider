@@ -9,6 +9,8 @@ import { PageInterceptor } from "./PageInterceptor.js";
 import { DomUtil, timelineWrapperSelector, waitForElm } from "./Utils.js";
 import { TwitterMutator } from "./TwitterMutator.js";
 import "./css/modal.css";
+import "./css/switch.css";
+import "./css/main.css";
 
 @singleton()
 class TwitterPostObserver {
@@ -16,9 +18,7 @@ class TwitterPostObserver {
         private uiBuilder: UiBuilder,
         private localStoreManager: LocalStoreManager,
         private twitterMutator: TwitterMutator,
-    ) {
-        uiBuilder.injectContent();
-    }
+    ) {}
 
     private removeElm(elms: Element[]): void {
         for (const elm of elms) {
@@ -72,10 +72,15 @@ class TwitterPostObserver {
 
     @PostConstruct
     private async init(): Promise<void> {
+        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
         const location = window.location.pathname.split("/").pop();
         const pageInterceptor = container.resolve(PageInterceptor);
 
         pageInterceptor.addAction(async () => {
+            if (allBlockedWords.length === 0) {
+                this.twitterMutator.closeMutators();
+                return;
+            }
             const location = window.location.pathname.split("/").pop();
             await this.twitterMutator.init();
             if (location === "home") {
@@ -96,7 +101,6 @@ class TwitterPostObserver {
                 return;
             }
             const insertAfter = await waitForElm("a[href='/settings/muted_keywords']");
-            const container = insertAfter.parentElement!;
             insertAfter.after(anchor);
             const modal = await this.buildModal();
             anchor.addEventListener("click", () => {
@@ -106,7 +110,12 @@ class TwitterPostObserver {
     }
 
     private async buildModal(): Promise<HTMLElement> {
-        const [modal, exists] = await this.uiBuilder.getEditor();
+        const [modal, exists] = await this.uiBuilder.getEditor(blockedWords => {
+            // no point listening for mutation events if there are no words to block
+            if (blockedWords.length === 0) {
+                this.twitterMutator.closeMutators();
+            }
+        });
         if (!exists) {
             const el: HTMLElement = document.body;
             el.insertAdjacentElement("beforeend", modal);

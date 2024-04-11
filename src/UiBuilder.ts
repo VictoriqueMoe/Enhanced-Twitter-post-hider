@@ -1,31 +1,11 @@
 import { singleton } from "tsyringe";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { DomUtil } from "./Utils.js";
+import { BlockedWordEntry } from "./typings.js";
 
 @singleton()
 export class UiBuilder {
     public constructor(private localStoreManager: LocalStoreManager) {}
-    private contentInjected = false;
-
-    public injectContent(): void {
-        if (this.contentInjected) {
-            return;
-        }
-        const css = this.buildCss();
-        // const header = `<meta http-equiv="Content-Security-Policy" content="default-src 'self' *">`;
-        document.getElementsByTagName("head")[0].appendChild(css);
-        this.contentInjected = true;
-    }
-
-    private buildCss(): HTMLStyleElement {
-        const style = document.createElement("style");
-        style.innerHTML = `
-            .hidden{
-                display: none;
-            }
-        `;
-        return style;
-    }
 
     public buildOption(): HTMLAnchorElement | null {
         const hasEl = document.querySelector("#enhanced_muted_words") !== null;
@@ -46,26 +26,92 @@ export class UiBuilder {
         return a;
     }
 
-    public async getEditor(): Promise<[HTMLElement, boolean]> {
+    public async getEditor(
+        onSave?: (blockedWords: BlockedWordEntry[]) => void | Promise<void>,
+    ): Promise<[HTMLElement, boolean]> {
+        function createTableBodyRows(allBlockedWords: BlockedWordEntry[]): string {
+            let tableBodyRows = "";
+            for (const blockedWord of allBlockedWords) {
+                tableBodyRows += `
+                <tr>
+                    <td contenteditable="true">${blockedWord.phrase}</td>
+                    <td>
+                        <select>
+                            <option value="true" ${blockedWord.options.useRegex ? "selected" : ""}>true</option>
+                            <option value="false" ${blockedWord.options.useRegex ? "" : "selected"}>false</option>
+                        </select>
+                    </td>
+                    <td><button data-id="removeRow">Remove</button></td>
+                </tr>
+            `;
+            }
+            return tableBodyRows;
+        }
+
+        function createHtmlTable(allBlockedWords: BlockedWordEntry[]): string {
+            return `
+                <div id='currentBlockedWordsTableWrapper'></div>
+                <table id='currentBlockedWordsTable'>
+                    <thead>
+                        <tr>
+                            <th scope="col">Phrase</th>
+                            <th scope="col">Regex</th>
+                        </tr>
+                    </thead>
+                <tbody id="currentBlockedWordsTableBody">
+                    ${createTableBodyRows(allBlockedWords)}
+                </tbody>
+                </table>
+            `;
+        }
+
         const existingModel = document.getElementById("#enhancedMutedWordsDialog");
         if (existingModel) {
             return [existingModel, true];
         }
-        const modal = DomUtil.createModal({
+        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
+        const modal = await DomUtil.createModal({
             id: "enhancedMutedWordsDialog",
-            body: ((): string => {
-                let html = "";
-                html += '<label for="tagInput">Blocked word input here:</label>';
-                html += '<input id="tagInput" />';
-                html += "<div class='filterOptionSection' data-type='exclude' id='excludeFilterSection'></div>";
-                return html;
-            })(),
+            body: () => createHtmlTable(allBlockedWords),
             title: "Enhanced Muted words",
             modalBodyStyle: {
                 height: "auto",
                 overflow: "auto",
             },
-            footer: `<button class="button blackButton fetishOptionsConfirm apply">Apply</button>`,
+            footer: `<button id="applyEnhancedMutedWords" class="button blackButton apply">Save</button>`,
+        });
+        modal.querySelector("#applyEnhancedMutedWords")?.addEventListener("click", async () => {
+            const table = modal.querySelector("#currentBlockedWordsTable")! as HTMLTableElement;
+            const tableRows = Array.from(table.querySelectorAll("#currentBlockedWordsTableBody tr"));
+            const blockedWords: BlockedWordEntry[] = [];
+            for (const row of tableRows) {
+                const tableTextContent = row.querySelector("td:first-child")?.textContent;
+                if (!tableTextContent) {
+                    alert("Unable to set blank phrase");
+                    return;
+                }
+                const phrase = tableTextContent;
+                const useRegex = row.querySelector("select")!.value === "true";
+                if (useRegex) {
+                    try {
+                        new RegExp(phrase);
+                    } catch (e) {
+                        alert(`Regex ${phrase} is not valid: ${(e as Error).message}`);
+                        return;
+                    }
+                }
+                blockedWords.push({ phrase, options: { useRegex } });
+            }
+            await this.localStoreManager.setBlockedWords(blockedWords);
+            if (onSave) {
+                await onSave(blockedWords);
+            }
+        });
+        modal.querySelectorAll("button[data-id='removeRow']").forEach(e => {
+            e.addEventListener("click", e => {
+                const target = e.target as HTMLButtonElement;
+                target.closest("tr")?.remove();
+            });
         });
         return [modal, false];
     }

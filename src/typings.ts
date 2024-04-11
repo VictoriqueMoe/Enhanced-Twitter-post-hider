@@ -18,7 +18,7 @@ export type Action = () => void;
 
 export type ModalOptions = {
     title: string;
-    body: string;
+    body: () => Promise<string> | string;
     footer?: string;
     modalBodyStyle?: { [style: string]: string };
     modalContentStyle?: { [style: string]: string };

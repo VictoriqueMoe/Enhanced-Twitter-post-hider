@@ -7,24 +7,20 @@ export class LocalStoreManager {
 
     public async addBlockedWord(entry: BlockedWordEntry): Promise<void> {
         const storedWords = await this.getItm();
-        if (!storedWords) {
-            await this.setItm([entry]);
+        const idx = storedWords.findIndex(value => value.phrase === entry.phrase);
+        if (idx > -1) {
+            storedWords[idx] = entry;
         } else {
-            const idx = storedWords.findIndex(value => value.phrase === entry.phrase);
-            if (idx > -1) {
-                storedWords[idx] = entry;
-            } else {
-                storedWords.push(entry);
-            }
-            await this.setItm(storedWords);
+            storedWords.push(entry);
         }
+        await this.setItm(storedWords);
     }
 
     public setBlockedWords(entries: BlockedWordEntry[]): Promise<void> {
         return this.setItm(entries);
     }
 
-    public getAllStoredWords(): Promise<BlockedWordEntry[] | null> {
+    public getAllStoredWords(): Promise<BlockedWordEntry[]> {
         return this.getItm();
     }
 
@@ -44,10 +40,10 @@ export class LocalStoreManager {
         return false;
     }
 
-    private async getItm(): Promise<BlockedWordEntry[] | null> {
+    private async getItm(): Promise<BlockedWordEntry[]> {
         const itmJson = (await GM.getValue(this.KEY)) as string;
         if (!itmJson) {
-            return null;
+            return [];
         }
         return JSON.parse(itmJson);
     }

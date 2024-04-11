@@ -1,0 +1,35 @@
+.remove-button {
+    color: red;
+}
+
+.hidden {
+    display: none;
+}
+
+#currentBlockedWordsTable {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#currentBlockedWordsTable td, #currentBlockedWordsTable th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+#currentBlockedWordsTable th:last-of-type,
+#currentBlockedWordsTable td:last-of-type {
+    border: none;
+    width: 20px;
+}
+
+#currentBlockedWordsTable tr:hover {
+    background-color: #073d1e;
+}
+
+#currentBlockedWordsTable th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #04AA6D;
+    color: white;
+}

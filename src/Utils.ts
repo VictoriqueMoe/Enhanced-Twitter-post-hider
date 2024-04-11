@@ -35,7 +35,7 @@ export class DomUtil {
      * Create a modal with the given options
      * @param options
      */
-    public static createModal(options: ModalOptions): HTMLElement {
+    public static async createModal(options: ModalOptions): Promise<HTMLElement> {
         function getStyle(styleObj?: { [style: string]: string }): string {
             let styleStr = "";
             if (styleObj) {
@@ -55,13 +55,14 @@ export class DomUtil {
 
         const bodyStyle = getStyle(options.modalContentStyle);
         const styleStr = getStyle(options.modalBodyStyle);
-        let html = `<div class="FetishModal" id="${id}"> 
+        const body = await options.body();
+        let html = `<div class="Modal" id="${id}"> 
                         <div class="FSmodalContent" style="${bodyStyle}"> 
                             <div class="FSmodalHeader"> 
                                 <span class="FSclose">&times;</span> 
                                 <h5 class="FSmodalTitle">${options.title}</h5> 
                             </div> 
-                            <div class="FSModalBody" style="${styleStr}">${options.body}</div>`;
+                            <div class="FSModalBody" style="${styleStr}">${body}</div>`;
         if (options.footer) {
             html += ` <div class="FSModalFooter"> 
                          ${options.footer} 
