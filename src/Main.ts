@@ -72,11 +72,11 @@ class TwitterPostObserver {
 
     @PostConstruct
     private async init(): Promise<void> {
-        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
         const location = window.location.pathname.split("/").pop();
         const pageInterceptor = container.resolve(PageInterceptor);
 
         pageInterceptor.addAction(async () => {
+            const allBlockedWords = await this.localStoreManager.getAllStoredWords();
             if (allBlockedWords.length === 0) {
                 this.twitterMutator.closeMutators();
                 return;
