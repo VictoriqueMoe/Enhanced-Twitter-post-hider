@@ -65,6 +65,15 @@ export class UiBuilder {
             `;
         }
 
+        function bindRemoveButtons(): void {
+            modal.querySelectorAll("button[data-id='removeRow']").forEach(e => {
+                DomUtil.offOn(e, "click", e => {
+                    const target = e!.target as HTMLButtonElement;
+                    target.closest("tr")?.remove();
+                });
+            });
+        }
+
         const existingModel = document.getElementById("#enhancedMutedWordsDialog");
         if (existingModel) {
             return [existingModel, true];
@@ -78,7 +87,10 @@ export class UiBuilder {
                 height: "auto",
                 overflow: "auto",
             },
-            footer: `<button id="applyEnhancedMutedWords" class="button blackButton apply">Save</button>`,
+            footer: `
+                <button id="AddRowButton" class="button blackButton">Add row</button>
+                <button id="applyEnhancedMutedWords" class="button blackButton apply">Save</button>
+            `,
         });
         modal.querySelector("#applyEnhancedMutedWords")?.addEventListener("click", async () => {
             const table = modal.querySelector("#currentBlockedWordsTable")! as HTMLTableElement;
@@ -106,12 +118,24 @@ export class UiBuilder {
             if (onSave) {
                 await onSave(blockedWords);
             }
+            alert("Saved successfully.");
         });
-        modal.querySelectorAll("button[data-id='removeRow']").forEach(e => {
-            e.addEventListener("click", e => {
-                const target = e.target as HTMLButtonElement;
-                target.closest("tr")?.remove();
-            });
+        bindRemoveButtons();
+        modal.querySelector("#AddRowButton")?.addEventListener("click", () => {
+            const table = modal.querySelector("#currentBlockedWordsTable")! as HTMLTableElement;
+            const newRow = document.createElement("tr");
+            newRow.innerHTML = `
+                <td contenteditable="true"></td>
+                <td>
+                    <select>
+                        <option value="true">true</option>
+                        <option value="false">false</option>
+                    </select>
+                </td>
+                <td><button data-id="removeRow">Remove</button></td>
+            `;
+            table.querySelector("#currentBlockedWordsTableBody")?.appendChild(newRow);
+            bindRemoveButtons();
         });
         return [modal, false];
     }

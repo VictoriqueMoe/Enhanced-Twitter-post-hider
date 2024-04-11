@@ -89,7 +89,7 @@ export class DomUtil {
         return document.querySelector(selector);
     }
 
-    private static offOn(
+    public static offOn(
         el: Element | string | null,
         event: string,
         callBack: (e?: Event) => void,
