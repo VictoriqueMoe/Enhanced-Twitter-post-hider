@@ -38,8 +38,7 @@ class TwitterPostObserver {
         });
     }
 
-    private async shouldRemove(el: HTMLElement): Promise<boolean> {
-        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
+    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): boolean {
         if (!allBlockedWords || allBlockedWords.length === 0) {
             return false;
         }
@@ -56,18 +55,18 @@ class TwitterPostObserver {
 
     @TwitterPostEvent(TwitterPostType.TIMELINE)
     public async processTimelinePost(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
-        const elmsToRemovePArray = mutationList.map(async mutationRecord => {
+        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
+        const elmsToRemove = mutationList.flatMap(mutationRecord => {
             const retArr: Element[] = [];
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
                 const newTimelinePost = mutationRecord.addedNodes[i] as HTMLElement;
-                if (await this.shouldRemove(newTimelinePost)) {
+                if (this.shouldRemove(newTimelinePost, allBlockedWords)) {
                     retArr.push(newTimelinePost);
                 }
             }
             return retArr;
         });
-        const elmsToRemove = await Promise.all(elmsToRemovePArray);
-        this.removeElm(elmsToRemove.flat());
+        this.removeElm(elmsToRemove);
     }
 
     @PostConstruct
@@ -128,10 +127,11 @@ class TwitterPostObserver {
         if (!timelineContainer.children) {
             return;
         }
+        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
         const toRemove: Element[] = [];
         for (let i = 0; i < timelineContainer.children.length; i++) {
             const chatItem = timelineContainer.children[i] as HTMLElement;
-            if (await this.shouldRemove(chatItem)) {
+            if (this.shouldRemove(chatItem, allBlockedWords)) {
                 toRemove.push(chatItem);
             }
         }
