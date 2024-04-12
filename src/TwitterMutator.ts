@@ -34,6 +34,14 @@ export class TwitterMutator {
 
     private async onTimelinePost(): Promise<void> {
         const elm = await waitForElm(timelineWrapperSelector);
+        const parentSection = elm.closest("section");
+        if (!parentSection) {
+            return;
+        }
+        const sectionWrapper = parentSection.parentElement;
+        if (!sectionWrapper) {
+            return;
+        }
         if (this.observerProxy) {
             this.observerProxy.disconnect();
         }
@@ -47,8 +55,10 @@ export class TwitterMutator {
                 observable.method.call(instance, mutations, observer);
             }
         });
-        this.observerProxy.observe(elm, {
+
+        this.observerProxy.observe(sectionWrapper, {
             childList: true,
+            subtree: true,
         });
     }
 
