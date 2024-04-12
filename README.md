@@ -4,8 +4,9 @@ This contains a UI enhancement to Twitter that adds Enhanced Muted Words to the 
 It provides much improved and much finer grain control of muted words, with the option for using 
 regular expressions for filtering.
 
-> **BETA VERSION**<br>
-> Currently only posts from the timeline are hidden at this time.  A planned future enhancement is to support comments.
+This supports the home page timeline, lists, posts, statuses and users pages
+
+> this is still a **BETA VERSION**<br>
 
 ## Installation
 
