@@ -1,5 +1,3 @@
-import { constructor } from "tsyringe/dist/typings/types/index.js";
-
 export type storeKeys = "blockedWords" | "audit";
 
 export type BlockedWordEntry = {
@@ -10,13 +8,6 @@ export type BlockedWordEntry = {
 };
 
 export type BlockedWordAudit = Record<string, number>;
-
-export type Observable = (mutationList: MutationRecord[], observer: MutationObserver) => void;
-
-export type ObserverRunnable = {
-    method: Observable;
-    context: constructor<unknown>;
-};
 
 export type Action = () => void;
 

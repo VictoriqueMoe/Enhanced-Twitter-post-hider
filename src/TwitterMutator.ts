@@ -1,39 +1,30 @@
 import { container, singleton } from "tsyringe";
 import { PostConstruct } from "./decorators/PostConstruct.js";
-import { timelineWrapperSelector, waitForElm } from "./Utils.js";
+import { getSelectorForPage, waitForElm } from "./Utils.js";
 import type { constructor } from "tsyringe/dist/typings/types/index.js";
-import { Observable, ObserverRunnable } from "./typings.js";
-import { TwitterPostType } from "./decorators/TwitterPostEvent.js";
+import { Observable } from "./Observable.js";
 
 @singleton()
 export class TwitterMutator {
-    private observerProxy: MutationObserver | null = null;
+    private timelineObserverProxy: MutationObserver | null = null;
 
-    private readonly observerList: Map<TwitterPostType, ObserverRunnable[]> = new Map();
+    private readonly observerList: constructor<Observable>[] = [];
 
     @PostConstruct
     public async init(): Promise<void> {
-        const location = window.location.pathname.split("/").pop();
-        switch (location) {
-            case "home":
-                await this.onTimelinePost();
-        }
+        await this.onTweet();
     }
 
-    public addObserver(context: constructor<unknown>, type: TwitterPostType, method: Observable): void {
-        const obj: ObserverRunnable = {
-            method,
-            context,
-        };
-        if (this.observerList.has(type)) {
-            this.observerList.get(type)?.push(obj);
-        } else {
-            this.observerList.set(type, [obj]);
-        }
+    public addObserver(context: constructor<Observable>): void {
+        this.observerList.push(context);
     }
 
-    private async onTimelinePost(): Promise<void> {
-        const elm = await waitForElm(timelineWrapperSelector);
+    private async onTweet(): Promise<void> {
+        const homePageSelector = getSelectorForPage();
+        const elm = await waitForElm(homePageSelector);
+        if (!elm) {
+            return;
+        }
         const parentSection = elm.closest("section");
         if (!parentSection) {
             return;
@@ -42,28 +33,24 @@ export class TwitterMutator {
         if (!sectionWrapper) {
             return;
         }
-        if (this.observerProxy) {
-            this.observerProxy.disconnect();
+        if (this.timelineObserverProxy) {
+            this.timelineObserverProxy.disconnect();
         }
-        this.observerProxy = new MutationObserver((mutations, observer) => {
-            const observables = this.observerList.get(TwitterPostType.TIMELINE);
-            if (!observables) {
-                return;
-            }
-            for (const observable of observables) {
-                const instance = container.resolve(observable.context);
-                observable.method.call(instance, mutations, observer);
+        this.timelineObserverProxy = new MutationObserver((mutations, observer) => {
+            for (const observable of this.observerList) {
+                const instance = container.resolve(observable);
+                instance.observe(mutations, observer);
             }
         });
 
-        this.observerProxy.observe(sectionWrapper, {
+        this.timelineObserverProxy.observe(sectionWrapper, {
             childList: true,
             subtree: true,
         });
     }
 
     public closeMutators(): void {
-        this.observerProxy?.disconnect();
+        this.timelineObserverProxy?.disconnect();
     }
 
     public async openMutators(): Promise<void> {

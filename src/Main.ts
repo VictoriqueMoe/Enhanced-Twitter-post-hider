@@ -3,17 +3,18 @@ import { container, singleton } from "tsyringe";
 import { UiBuilder } from "./UiBuilder.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { BlockedWordEntry } from "./typings.js";
-import { TwitterPostEvent, TwitterPostType } from "./decorators/TwitterPostEvent.js";
+import { TwitterPostEvent } from "./decorators/TwitterPostEvent.js";
 import { PostConstruct } from "./decorators/PostConstruct.js";
 import { PageInterceptor } from "./PageInterceptor.js";
-import { DomUtil, timelineWrapperSelector, waitForElm } from "./Utils.js";
+import { DomUtil, getSelectorForPage, waitForElm } from "./Utils.js";
 import { TwitterMutator } from "./TwitterMutator.js";
 import "./css/modal.css";
 import "./css/switch.css";
 import "./css/main.css";
+import { Observable } from "./Observable.js";
 
 @singleton()
-class TwitterPostObserver {
+class TwitterPostObserver implements Observable {
     public constructor(
         private uiBuilder: UiBuilder,
         private localStoreManager: LocalStoreManager,
@@ -53,8 +54,8 @@ class TwitterPostObserver {
         });
     }
 
-    @TwitterPostEvent(TwitterPostType.TIMELINE)
-    public async processTimelinePost(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
+    @TwitterPostEvent
+    public async observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
         const elmsToRemove = mutationList.flatMap(mutationRecord => {
             const retArr: Element[] = [];
@@ -80,16 +81,11 @@ class TwitterPostObserver {
                 this.twitterMutator.closeMutators();
                 return;
             }
-            const location = window.location.pathname.split("/").pop();
             await this.twitterMutator.init();
-            if (location === "home") {
-                await this.loadPage();
-            }
+            await this.loadPage();
         });
 
-        if (location === "home") {
-            await this.loadPage();
-        }
+        await this.loadPage();
         pageInterceptor.addAction(async () => {
             const page = window.location.pathname.split("/").pop();
             if (page !== "mute_and_block") {
@@ -100,6 +96,9 @@ class TwitterPostObserver {
                 return;
             }
             const insertAfter = await waitForElm("a[href='/settings/muted_keywords']");
+            if (!insertAfter) {
+                return;
+            }
             insertAfter.after(anchor);
             const modal = await this.buildModal();
             anchor.addEventListener("click", () => {
@@ -123,7 +122,11 @@ class TwitterPostObserver {
     }
 
     private async loadPage(): Promise<void> {
-        const timelineContainer = await waitForElm(timelineWrapperSelector);
+        const selectorToLoad = getSelectorForPage();
+        const timelineContainer = await waitForElm(selectorToLoad);
+        if (!timelineContainer) {
+            return;
+        }
         if (!timelineContainer.children) {
             return;
         }

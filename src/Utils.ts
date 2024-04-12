@@ -1,16 +1,20 @@
 import { ModalOptions } from "./typings.js";
 
-export function waitForElm(selector: string, node?: Element): Promise<Element> {
-    return new Promise(resolve => {
+export function waitForElm(selector: string, node?: Element): Promise<Element | null> {
+    return new Promise((resolve, reject) => {
         const e = node ?? document;
         if (e.querySelector(selector)) {
             return resolve(e.querySelector(selector)!);
         }
-
+        const timeout = setTimeout(() => {
+            resolve(null);
+            observer.disconnect();
+        }, 10000);
         const observer = new MutationObserver(() => {
             if (e.querySelector(selector)) {
                 resolve(e.querySelector(selector)!);
                 observer.disconnect();
+                clearTimeout(timeout);
             }
         });
         observer.observe(e, {
@@ -164,7 +168,14 @@ export class DomUtil {
     }
 }
 
-export const timelineWrapperSelector = "[aria-label*='Home Timeline'] > div[style^='position: relative']";
+export function getSelectorForPage(): string {
+    const path = window.location.pathname;
+    const page = path.split("/").pop();
+    if (page === "mute_and_block") {
+        return "a[href='/settings/muted_keywords']";
+    }
+    return "[aria-label*='Timeline'] > div[style^='position: relative']";
+}
 
 export function toggleHide(hide: boolean, element: HTMLElement): void {
     hide ? element.classList.add("hidden") : element.classList.remove("hidden");
