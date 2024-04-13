@@ -76,11 +76,9 @@ class TwitterPostObserver implements Observable {
         // collection of how many elements a phrase muted
         const muteMap: Map<string, Element[]> = new Map();
         for (const mutationRecord of mutationList) {
-            if (mutationRecord.type === "childList") {
-                for (let i = 0; i < mutationRecord.removedNodes.length; i++) {
-                    const removedNode = mutationRecord.removedNodes[i] as HTMLElement;
-                    this.populateMuteMap(removedNode, allBlockedWords, muteMap);
-                }
+            for (let i = 0; i < mutationRecord.removedNodes.length; i++) {
+                const removedNode = mutationRecord.removedNodes[i] as HTMLElement;
+                this.populateMuteMap(removedNode, allBlockedWords, muteMap);
             }
         }
         await this.processMuteMap(muteMap);
@@ -93,9 +91,11 @@ class TwitterPostObserver implements Observable {
     ): void {
         const [shouldRemove, phrase] = this.shouldRemove(removedNode, allBlockedWords);
         if (shouldRemove) {
-            const elements = muteMap.get(phrase!) ?? [];
-            elements.push(removedNode);
-            muteMap.set(phrase!, elements);
+            if (muteMap.has(phrase!)) {
+                muteMap.get(phrase!)?.push(removedNode);
+            } else {
+                muteMap.set(phrase!, [removedNode]);
+            }
         }
     }
 
