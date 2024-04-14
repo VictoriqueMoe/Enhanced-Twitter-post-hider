@@ -76,8 +76,8 @@ class TwitterPostObserver implements Observable {
         // collection of how many elements a phrase muted
         const muteMap: Map<string, Element[]> = new Map();
         for (const mutationRecord of mutationList) {
-            for (let i = 0; i < mutationRecord.removedNodes.length; i++) {
-                const removedNode = mutationRecord.removedNodes[i] as HTMLElement;
+            for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
+                const removedNode = mutationRecord.addedNodes[i] as HTMLElement;
                 this.populateMuteMap(removedNode, allBlockedWords, muteMap);
             }
         }

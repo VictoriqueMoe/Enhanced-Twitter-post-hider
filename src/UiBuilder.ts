@@ -3,6 +3,10 @@ import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { DomUtil } from "./Utils.js";
 import { BlockedWordEntry } from "./typings.js";
 
+type blockedWordCountAware = BlockedWordEntry & {
+    count: number;
+};
+
 @singleton()
 export class UiBuilder {
     public constructor(private localStoreManager: LocalStoreManager) {}
@@ -27,9 +31,9 @@ export class UiBuilder {
     }
 
     public async getEditor(
-        onSave?: (blockedWords: BlockedWordEntry[]) => void | Promise<void>,
+        onSave?: (blockedWords: blockedWordCountAware[]) => void | Promise<void>,
     ): Promise<[HTMLElement, boolean]> {
-        function createTableBodyRows(allBlockedWords: BlockedWordEntry[]): string {
+        function createTableBodyRows(allBlockedWords: blockedWordCountAware[]): string {
             let tableBodyRows = "";
             for (const blockedWord of allBlockedWords) {
                 tableBodyRows += `
@@ -41,14 +45,17 @@ export class UiBuilder {
                             <option value="false" ${blockedWord.options.useRegex ? "" : "selected"}>false</option>
                         </select>
                     </td>
-                    <td><button data-id="removeRow">Remove</button></td>
+                    <td>${blockedWord.count}</td>
+                    <td>
+                        <button data-id="removeRow">Remove</button>
+                    </td>
                 </tr>
             `;
             }
             return tableBodyRows;
         }
 
-        function createHtmlTable(allBlockedWords: BlockedWordEntry[]): string {
+        function createHtmlTable(allBlockedWords: blockedWordCountAware[]): string {
             return `
                 <div id='currentBlockedWordsTableWrapper'></div>
                 <table id='currentBlockedWordsTable'>
@@ -56,6 +63,7 @@ export class UiBuilder {
                         <tr>
                             <th scope="col">Phrase</th>
                             <th scope="col">Regex</th>
+                            <th scope="col">Mute count</th>
                         </tr>
                     </thead>
                 <tbody id="currentBlockedWordsTableBody">
@@ -79,9 +87,14 @@ export class UiBuilder {
             return [existingModel, true];
         }
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
+        const muteCount = await this.localStoreManager.getAuditEntries();
+        const merged: blockedWordCountAware[] = allBlockedWords.map(value => {
+            const auditEntry = muteCount[value.phrase] ?? 0;
+            return { ...value, count: auditEntry };
+        });
         const modal = await DomUtil.createModal({
             id: "enhancedMutedWordsDialog",
-            body: () => createHtmlTable(allBlockedWords),
+            body: () => createHtmlTable(merged),
             title: "Enhanced Muted words",
             modalBodyStyle: {
                 height: "auto",
@@ -95,7 +108,8 @@ export class UiBuilder {
         modal.querySelector("#applyEnhancedMutedWords")?.addEventListener("click", async () => {
             const table = modal.querySelector("#currentBlockedWordsTable")! as HTMLTableElement;
             const tableRows = Array.from(table.querySelectorAll("#currentBlockedWordsTableBody tr"));
-            const blockedWords: BlockedWordEntry[] = [];
+            const muteCount = await this.localStoreManager.getAuditEntries();
+            const blockedWords: blockedWordCountAware[] = [];
             for (const row of tableRows) {
                 const tableTextContent = row.querySelector("td:first-child")?.textContent;
                 if (!tableTextContent) {
@@ -112,7 +126,12 @@ export class UiBuilder {
                         return;
                     }
                 }
-                blockedWords.push({ phrase, options: { useRegex } });
+                const auditEntry = muteCount[phrase] ?? 0;
+                blockedWords.push({
+                    phrase,
+                    options: { useRegex },
+                    count: auditEntry,
+                });
             }
             await this.localStoreManager.setBlockedWords(blockedWords);
             if (onSave) {
@@ -132,7 +151,10 @@ export class UiBuilder {
                         <option value="false">false</option>
                     </select>
                 </td>
-                <td><button data-id="removeRow">Remove</button></td>
+                <td>0</td>
+                <td>
+                    <button data-id="removeRow">Remove</button>
+                </td>
             `;
             table.querySelector("#currentBlockedWordsTableBody")?.appendChild(newRow);
             bindRemoveButtons();
