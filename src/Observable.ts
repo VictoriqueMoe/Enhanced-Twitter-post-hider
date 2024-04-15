@@ -4,5 +4,5 @@ export interface Observable {
      * @param {MutationRecord[]} mutationList
      * @param {MutationObserver} observer
      */
-    observe(mutationList: MutationRecord[], observer: MutationObserver): void;
+    observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void>;
 }

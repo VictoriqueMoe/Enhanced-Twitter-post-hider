@@ -4,10 +4,6 @@ This contains a UI enhancement to Twitter that adds Enhanced Muted Words to the 
 It provides much improved and much finer grain control of muted words, with the option for using 
 regular expressions for filtering.
 
-This supports the home page timeline, lists, posts, statuses and users pages
-
-> this is still a **BETA VERSION**<br>
-
 ## Installation
 
 This is a userscript that has been designed to run under `TamperMonkey`.  You will first need to have the tampermonkey 
