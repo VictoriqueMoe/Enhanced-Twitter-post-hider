@@ -27,47 +27,76 @@ class TwitterPostObserver implements Observable {
         }
     }
 
-    private isTextBlocked(tweetText: string, allBlockedWords: BlockedWordEntry[]): boolean {
-        return allBlockedWords.some(blockedWord => {
+    private async processMuteMap(muteMap: Map<string, Element[]>): Promise<void> {
+        const pArr: Promise<void>[] = [];
+        for (const [phrase, elements] of muteMap) {
+            this.removeElm(elements);
+            pArr.push(this.localStoreManager.incrementBlockedWordAudit(phrase));
+        }
+        await Promise.all(pArr);
+    }
+
+    private findMatchingBlockPhrase(tweetText: string, allBlockedWords: BlockedWordEntry[]): string | null {
+        for (const blockedWord of allBlockedWords) {
             const { phrase, options } = blockedWord;
             const { useRegex } = options;
             if (useRegex) {
                 const regEx = new RegExp(phrase, "gm");
-                return regEx.test(tweetText);
+                if (regEx.test(tweetText)) {
+                    return phrase;
+                }
+            } else if (tweetText.includes(phrase)) {
+                return phrase;
             }
-            return tweetText.includes(phrase);
-        });
+        }
+        return null;
     }
 
-    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): boolean {
+    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): [boolean, string | null] {
         if (!allBlockedWords || allBlockedWords.length === 0) {
-            return false;
+            return [false, null];
         }
-
         const tweetTexts = el.querySelectorAll("[data-testid='tweetText']");
-        return Array.from(tweetTexts).some(tweet => {
+        for (const tweet of Array.from(tweetTexts)) {
             const tweetText = tweet.textContent;
             if (tweetText) {
-                return this.isTextBlocked(tweetText, allBlockedWords);
+                const matchedPhrase = this.findMatchingBlockPhrase(tweetText, allBlockedWords);
+                if (matchedPhrase) {
+                    return [true, matchedPhrase];
+                }
             }
-            return false;
-        });
+        }
+        return [false, null];
     }
 
     @TwitterPostEvent
     public async observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
-        const elmsToRemove = mutationList.flatMap(mutationRecord => {
-            const retArr: Element[] = [];
+
+        // collection of how many elements a phrase muted
+        const muteMap: Map<string, Element[]> = new Map();
+        for (const mutationRecord of mutationList) {
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
-                const newTimelinePost = mutationRecord.addedNodes[i] as HTMLElement;
-                if (this.shouldRemove(newTimelinePost, allBlockedWords)) {
-                    retArr.push(newTimelinePost);
-                }
+                const removedNode = mutationRecord.addedNodes[i] as HTMLElement;
+                this.populateMuteMap(removedNode, allBlockedWords, muteMap);
             }
-            return retArr;
-        });
-        this.removeElm(elmsToRemove);
+        }
+        await this.processMuteMap(muteMap);
+    }
+
+    private populateMuteMap(
+        removedNode: HTMLElement,
+        allBlockedWords: BlockedWordEntry[],
+        muteMap: Map<string, Element[]>,
+    ): void {
+        const [shouldRemove, phrase] = this.shouldRemove(removedNode, allBlockedWords);
+        if (shouldRemove) {
+            if (muteMap.has(phrase!)) {
+                muteMap.get(phrase!)?.push(removedNode);
+            } else {
+                muteMap.set(phrase!, [removedNode]);
+            }
+        }
     }
 
     @PostConstruct
@@ -122,6 +151,10 @@ class TwitterPostObserver implements Observable {
     }
 
     private async loadPage(): Promise<void> {
+        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
+        if (allBlockedWords.length === 0) {
+            return;
+        }
         const selectorToLoad = getSelectorForPage();
         const timelineContainer = await waitForElm(selectorToLoad);
         if (!timelineContainer) {
@@ -130,15 +163,12 @@ class TwitterPostObserver implements Observable {
         if (!timelineContainer.children) {
             return;
         }
-        const allBlockedWords = await this.localStoreManager.getAllStoredWords();
-        const toRemove: Element[] = [];
+        const muteMap: Map<string, Element[]> = new Map();
         for (let i = 0; i < timelineContainer.children.length; i++) {
             const chatItem = timelineContainer.children[i] as HTMLElement;
-            if (this.shouldRemove(chatItem, allBlockedWords)) {
-                toRemove.push(chatItem);
-            }
+            this.populateMuteMap(chatItem, allBlockedWords, muteMap);
         }
-        this.removeElm(toRemove);
+        await this.processMuteMap(muteMap);
     }
 }
 

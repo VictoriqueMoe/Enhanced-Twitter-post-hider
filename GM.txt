@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Enhanced Twitter post hider
 // @namespace    victorique.moe
-// @version      0.0.5
+// @version      1.0.0
 // @description  Allows finer control over what words you want to hide from the platform
 // @grant        GM.xmlHttpRequest
 // @grant        GM.getValue

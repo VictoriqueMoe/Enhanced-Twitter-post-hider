@@ -46,9 +46,9 @@ export class LocalStoreManager {
     }
 
     public async incrementBlockedWordAudit(key: string): Promise<void> {
-        const itmJson = (await GM.getValue(this.KEY, `{"audit": []}`)) as string;
+        const itmJson = (await GM.getValue(this.KEY, `{"audit": {}}`)) as string;
         const gmJson: Record<storeKeys, BlockedWordAudit> = JSON.parse(itmJson);
-        const auditEntries = gmJson.audit;
+        const auditEntries = gmJson.audit ?? {};
         auditEntries[key] = auditEntries[key] ? auditEntries[key] + 1 : 1;
         gmJson.audit = auditEntries;
         await GM.setValue(this.KEY, JSON.stringify(gmJson));
