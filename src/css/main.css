@@ -16,7 +16,6 @@
     padding: 8px;
 }
 
-#currentBlockedWordsTable th:last-of-type,
 #currentBlockedWordsTable td:last-of-type {
     border: none;
     width: 20px;
@@ -32,4 +31,28 @@
     text-align: left;
     background-color: #04AA6D;
     color: white;
+}
+
+.overlay {
+    position: fixed;
+    display: block;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,1.0);
+    z-index: 2;
+    cursor: pointer;
+}
+
+.overlay .text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: white;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+    font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }

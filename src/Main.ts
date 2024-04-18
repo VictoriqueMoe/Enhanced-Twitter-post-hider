@@ -1,10 +1,7 @@
-import "reflect-metadata";
-import { container, singleton } from "tsyringe";
 import { UiBuilder } from "./UiBuilder.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { BlockedWordEntry } from "./typings.js";
 import { TwitterPostEvent } from "./decorators/TwitterPostEvent.js";
-import { PostConstruct } from "./decorators/PostConstruct.js";
 import { PageInterceptor } from "./PageInterceptor.js";
 import { DomUtil, getSelectorForPage, waitForElm } from "./Utils.js";
 import { TwitterMutator } from "./TwitterMutator.js";
@@ -13,46 +10,66 @@ import "./css/switch.css";
 import "./css/main.css";
 import { Observable } from "./Observable.js";
 
-@singleton()
-class TwitterPostObserver implements Observable {
-    public constructor(
-        private uiBuilder: UiBuilder,
-        private localStoreManager: LocalStoreManager,
-        private twitterMutator: TwitterMutator,
-    ) {}
+export class TwitterPostObserver implements Observable {
+    private static instance: TwitterPostObserver;
+    private readonly uiBuilder: UiBuilder = UiBuilder.getInstance();
+    private readonly localStoreManager: LocalStoreManager = LocalStoreManager.getInstance();
+    private twitterMutator!: TwitterMutator;
 
-    private removeElm(elms: Element[]): void {
+    private constructor() {}
+
+    public static async getInstance(): Promise<TwitterPostObserver> {
+        if (!TwitterPostObserver.instance) {
+            TwitterPostObserver.instance = new TwitterPostObserver();
+            await TwitterPostObserver.instance.init();
+            TwitterPostObserver.instance.twitterMutator = await TwitterMutator.getInstance();
+        }
+        return TwitterPostObserver.instance;
+    }
+
+    private regexPhraseCache: Map<string, RegExp> = new Map();
+
+    private removeElm(blockedWordEntry: BlockedWordEntry, elms: Element[]): void {
         for (const elm of elms) {
-            (elm as HTMLElement).style.display = "none";
+            const e = elm as HTMLElement;
+            if (blockedWordEntry.options.useOverlay) {
+                this.uiBuilder.injectOverlay(e, blockedWordEntry.phrase);
+            } else {
+                e.style.display = "none";
+            }
         }
     }
 
-    private async processMuteMap(muteMap: Map<string, Element[]>): Promise<void> {
+    private async processMuteMap(muteMap: Map<BlockedWordEntry, Element[]>): Promise<void> {
         const pArr: Promise<void>[] = [];
-        for (const [phrase, elements] of muteMap) {
-            this.removeElm(elements);
-            pArr.push(this.localStoreManager.incrementBlockedWordAudit(phrase));
+        for (const [entry, elements] of muteMap) {
+            this.removeElm(entry, elements);
+            pArr.push(this.localStoreManager.incrementBlockedWordAudit(entry.phrase));
         }
         await Promise.all(pArr);
     }
 
-    private findMatchingBlockPhrase(tweetText: string, allBlockedWords: BlockedWordEntry[]): string | null {
+    private findMatchingBlockPhrase(tweetText: string, allBlockedWords: BlockedWordEntry[]): BlockedWordEntry | null {
         for (const blockedWord of allBlockedWords) {
             const { phrase, options } = blockedWord;
             const { useRegex } = options;
             if (useRegex) {
-                const regEx = new RegExp(phrase, "gm");
-                if (regEx.test(tweetText)) {
-                    return phrase;
+                let regExp = this.regexPhraseCache.get(phrase);
+                if (!regExp) {
+                    regExp = new RegExp(phrase, "mi");
+                    this.regexPhraseCache.set(phrase, regExp);
+                }
+                if (regExp.test(tweetText)) {
+                    return blockedWord;
                 }
             } else if (tweetText.includes(phrase)) {
-                return phrase;
+                return blockedWord;
             }
         }
         return null;
     }
 
-    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): [boolean, string | null] {
+    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): [boolean, BlockedWordEntry | null] {
         if (!allBlockedWords || allBlockedWords.length === 0) {
             return [false, null];
         }
@@ -74,7 +91,7 @@ class TwitterPostObserver implements Observable {
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
 
         // collection of how many elements a phrase muted
-        const muteMap: Map<string, Element[]> = new Map();
+        const muteMap: Map<BlockedWordEntry, Element[]> = new Map();
         for (const mutationRecord of mutationList) {
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
                 const removedNode = mutationRecord.addedNodes[i] as HTMLElement;
@@ -87,22 +104,20 @@ class TwitterPostObserver implements Observable {
     private populateMuteMap(
         removedNode: HTMLElement,
         allBlockedWords: BlockedWordEntry[],
-        muteMap: Map<string, Element[]>,
+        muteMap: Map<BlockedWordEntry, Element[]>,
     ): void {
-        const [shouldRemove, phrase] = this.shouldRemove(removedNode, allBlockedWords);
+        const [shouldRemove, entry] = this.shouldRemove(removedNode, allBlockedWords);
         if (shouldRemove) {
-            if (muteMap.has(phrase!)) {
-                muteMap.get(phrase!)?.push(removedNode);
+            if (muteMap.has(entry!)) {
+                muteMap.get(entry!)?.push(removedNode);
             } else {
-                muteMap.set(phrase!, [removedNode]);
+                muteMap.set(entry!, [removedNode]);
             }
         }
     }
 
-    @PostConstruct
     private async init(): Promise<void> {
-        const location = window.location.pathname.split("/").pop();
-        const pageInterceptor = container.resolve(PageInterceptor);
+        const pageInterceptor = PageInterceptor.getInstance();
 
         pageInterceptor.addAction(async () => {
             const allBlockedWords = await this.localStoreManager.getAllStoredWords();
@@ -163,7 +178,7 @@ class TwitterPostObserver implements Observable {
         if (!timelineContainer.children) {
             return;
         }
-        const muteMap: Map<string, Element[]> = new Map();
+        const muteMap: Map<BlockedWordEntry, Element[]> = new Map();
         for (let i = 0; i < timelineContainer.children.length; i++) {
             const chatItem = timelineContainer.children[i] as HTMLElement;
             this.populateMuteMap(chatItem, allBlockedWords, muteMap);
@@ -172,4 +187,4 @@ class TwitterPostObserver implements Observable {
     }
 }
 
-container.resolve(TwitterPostObserver);
+await TwitterPostObserver.getInstance();

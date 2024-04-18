@@ -4,6 +4,7 @@ export type BlockedWordEntry = {
     phrase: string;
     options: {
         useRegex: boolean;
+        useOverlay: boolean;
     };
 };
 
@@ -18,4 +19,8 @@ export type ModalOptions = {
     modalBodyStyle?: { [style: string]: string };
     modalContentStyle?: { [style: string]: string };
     id?: string;
+};
+
+export type constructor<T> = {
+    new (...args: unknown[]): T;
 };

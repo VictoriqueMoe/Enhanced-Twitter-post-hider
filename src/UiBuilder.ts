@@ -1,15 +1,25 @@
-import { singleton } from "tsyringe";
-import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { DomUtil } from "./Utils.js";
 import { BlockedWordEntry } from "./typings.js";
+import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 
 type blockedWordCountAware = BlockedWordEntry & {
     count: number;
 };
 
-@singleton()
 export class UiBuilder {
-    public constructor(private localStoreManager: LocalStoreManager) {}
+    private static instance: UiBuilder;
+
+    private localStoreManager: LocalStoreManager = LocalStoreManager.getInstance();
+
+    private constructor() {}
+
+    public static getInstance(): UiBuilder {
+        if (!UiBuilder.instance) {
+            UiBuilder.instance = new UiBuilder();
+        }
+
+        return UiBuilder.instance;
+    }
 
     public buildOption(): HTMLAnchorElement | null {
         const hasEl = document.querySelector("#enhanced_muted_words") !== null;
@@ -30,12 +40,26 @@ export class UiBuilder {
         return a;
     }
 
+    public injectOverlay(e: Element, phrase: string): void {
+        const overlay = document.createElement("div");
+        const text = document.createElement("span");
+        text.className = "text";
+        text.textContent = `Content hidden due to rule ${phrase} - click to show`;
+        overlay.append(text);
+        overlay.className = "overlay";
+        overlay.onclick = (): void => {
+            overlay.style.display = "none";
+        };
+        e.append(overlay);
+    }
+
     public async getEditor(
         onSave?: (blockedWords: blockedWordCountAware[]) => void | Promise<void>,
     ): Promise<[HTMLElement, boolean]> {
         function createTableBodyRows(allBlockedWords: blockedWordCountAware[]): string {
             let tableBodyRows = "";
             for (const blockedWord of allBlockedWords) {
+                const useOverlay = blockedWord.options.useOverlay ?? false;
                 tableBodyRows += `
                 <tr>
                     <td contenteditable="true">${blockedWord.phrase}</td>
@@ -44,6 +68,12 @@ export class UiBuilder {
                             <option value="true" ${blockedWord.options.useRegex ? "selected" : ""}>true</option>
                             <option value="false" ${blockedWord.options.useRegex ? "" : "selected"}>false</option>
                         </select>
+                    </td>
+                    <td>
+                        <label class="switch">
+                          <input type="checkbox" class="useOverlayCheck" ${useOverlay ? "" : "checked"}>
+                          <span class="slider round"></span>
+                        </label>                    
                     </td>
                     <td>${blockedWord.count}</td>
                     <td>
@@ -63,6 +93,7 @@ export class UiBuilder {
                         <tr>
                             <th scope="col">Phrase</th>
                             <th scope="col">Regex</th>
+                            <th scope="col"><span title="If toggled on, this will remove the post completely instead of using an overlay">Remove posts</span></th>
                             <th scope="col">Mute count</th>
                         </tr>
                     </thead>
@@ -126,10 +157,15 @@ export class UiBuilder {
                         return;
                     }
                 }
+                const hidePost = (row.querySelector("input.useOverlayCheck")! as HTMLInputElement).checked;
+
                 const auditEntry = muteCount[phrase] ?? 0;
                 blockedWords.push({
                     phrase,
-                    options: { useRegex },
+                    options: {
+                        useRegex,
+                        useOverlay: !hidePost,
+                    },
                     count: auditEntry,
                 });
             }
@@ -150,6 +186,12 @@ export class UiBuilder {
                         <option value="true">true</option>
                         <option value="false">false</option>
                     </select>
+                </td>
+                <td>
+                    <label class=" switch">
+                      <input type="checkbox" class="useOverlayCheck">
+                      <span class="slider round"></span>
+                    </label>                    
                 </td>
                 <td>0</td>
                 <td>

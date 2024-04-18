@@ -1,8 +1,18 @@
-import { singleton } from "tsyringe";
 import { BlockedWordAudit, BlockedWordEntry, storeKeys } from "../typings.js";
 
-@singleton()
 export class LocalStoreManager {
+    private static instance: LocalStoreManager;
+
+    private constructor() {}
+
+    public static getInstance(): LocalStoreManager {
+        if (!LocalStoreManager.instance) {
+            LocalStoreManager.instance = new LocalStoreManager();
+        }
+
+        return LocalStoreManager.instance;
+    }
+
     private readonly KEY = "TWITTER_POST_HIDER_MANAGER";
 
     public async addBlockedWord(entry: BlockedWordEntry): Promise<void> {

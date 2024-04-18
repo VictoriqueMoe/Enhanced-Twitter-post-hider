@@ -1,14 +1,21 @@
-import { singleton } from "tsyringe";
 import { Action } from "./typings.js";
-import { PostConstruct } from "./decorators/PostConstruct.js";
 
-@singleton()
 export class PageInterceptor {
-    public constructor() {}
+    private static instance: PageInterceptor;
+
+    private constructor() {}
+
+    public static getInstance(): PageInterceptor {
+        if (!PageInterceptor.instance) {
+            PageInterceptor.instance = new PageInterceptor();
+            PageInterceptor.instance.init();
+        }
+
+        return PageInterceptor.instance;
+    }
 
     private readonly actions: Action[] = [];
 
-    @PostConstruct
     private init(): void {
         window.addEventListener(
             "load",
