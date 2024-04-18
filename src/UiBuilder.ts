@@ -60,6 +60,7 @@ export class UiBuilder {
             let tableBodyRows = "";
             for (const blockedWord of allBlockedWords) {
                 const useOverlay = blockedWord.options.useOverlay ?? false;
+                const filterUsername = blockedWord.options.useOverlay ?? false;
                 tableBodyRows += `
                 <tr>
                     <td contenteditable="true">${blockedWord.phrase}</td>
@@ -72,6 +73,12 @@ export class UiBuilder {
                     <td>
                         <label class="switch">
                           <input type="checkbox" class="useOverlayCheck" ${useOverlay ? "" : "checked"}>
+                          <span class="slider round"></span>
+                        </label>                    
+                    </td>
+                    <td>
+                        <label class="switch">
+                          <input type="checkbox" class="includeUsernameCheck" ${filterUsername ? "checked" : ""}>
                           <span class="slider round"></span>
                         </label>                    
                     </td>
@@ -94,6 +101,7 @@ export class UiBuilder {
                             <th scope="col">Phrase</th>
                             <th scope="col">Regex</th>
                             <th scope="col"><span title="If toggled on, this will remove the post completely instead of using an overlay">Remove posts</span></th>
+                            <th scope="col"><span title="If on, it will also include user handles (@) in the filter">Include username</span></th>
                             <th scope="col">Mute count</th>
                         </tr>
                     </thead>
@@ -157,7 +165,9 @@ export class UiBuilder {
                         return;
                     }
                 }
+
                 const hidePost = (row.querySelector("input.useOverlayCheck")! as HTMLInputElement).checked;
+                const filterUsername = (row.querySelector("input.includeUsernameCheck")! as HTMLInputElement).checked;
 
                 const auditEntry = muteCount[phrase] ?? 0;
                 blockedWords.push({
@@ -165,6 +175,7 @@ export class UiBuilder {
                     options: {
                         useRegex,
                         useOverlay: !hidePost,
+                        filterUsername,
                     },
                     count: auditEntry,
                 });
@@ -190,6 +201,12 @@ export class UiBuilder {
                 <td>
                     <label class=" switch">
                       <input type="checkbox" class="useOverlayCheck">
+                      <span class="slider round"></span>
+                    </label>                    
+                </td>
+                 <td>
+                    <label class=" switch">
+                      <input type="checkbox" class="includeUsernameCheck">
                       <span class="slider round"></span>
                     </label>                    
                 </td>

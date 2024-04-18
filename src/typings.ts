@@ -5,6 +5,7 @@ export type BlockedWordEntry = {
     options: {
         useRegex: boolean;
         useOverlay: boolean;
+        filterUsername: boolean;
     };
 };
 
