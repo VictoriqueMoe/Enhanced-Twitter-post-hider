@@ -26,21 +26,54 @@ Under Settings, choose `Privacy and Safety`, then in the far right bar choose `M
 
 You can now click on `Enhanced Muted Words` to get to the new features.
 
+![Menu Location](docs/MenuLocation.png)
+
 ### Add Blocked Words
 
 Click on `Add Row` to add a new row for a blocked word.  Fill in the phrase you wish to block and set the `Regex` switch 
-to either true to use it as a regular expression match or false to use it as an exact match.
+to either true to use it as a regular expression match or false to use it as an exact match.  There are also switches for
+`Remove Posts` and `Include Username`.  These are explained below.
 
 Click `Save` to save the rows.  Your muted phrase will then be active.
 
+![Add Entry](docs/AddEntry.png)
+
 > [Regular Expression Generator](https://regex-generator.olafneumann.org/?sampleText=Phrase%20goes%20here&flags=i) 
 > <br> This may be useful to those not familiar with regular expressions.
+
+#### Regex Switch
+The `Regex` switch can be set to true or false.  If you set it to true then the phrase will be treated as a regular 
+expression and will be used as a pattern to match against posts and optionally usernames.
+
+If this switch is set to false, then the phrase will be used as an exact match only.
+
+![Regex Switch](docs/RegexSwitch.png)
+
+#### Remove Posts Switch
+The `Remove Posts` switch can be set to on or off.  If it is set to `on` then the posts that match the phrase will be
+fully removed from the timeline.  
+
+If the switch is set to `off`, then the posts will simply be hidden on the timeline,
+and can be viewed at your discretion by clicking on them.
+
+![Remove Posts Switch](docs/RemovePostSwitch.png)
+
+#### Include Username Switch
+The `Include Username` switch can be set to on or off.  If it is set to `on`, then the username of the post will also be
+considered when matching the post.  If the username matches then the post will be hidden or removed based on the 
+`Remove Posts` switch.
+
+If the switch is set to `off`, then the username will not be considered.
+
+![Include Username Switch](docs/IncludeUsernameSwitch.png)
 
 ### Remove Blocked Words
 
 Click on `Remove Row` to remove a blocked word row.
 
 Click `Save` to save the rows.  Your muted phrase will then be removed.
+
+![Remove Entry](docs/RemoveEntry.png)
 
 ## For Developers
 
