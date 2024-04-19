@@ -49,10 +49,17 @@ export class TwitterPostObserver implements Observable {
         await Promise.all(pArr);
     }
 
-    private findMatchingBlockPhrase(tweetText: string, allBlockedWords: BlockedWordEntry[]): BlockedWordEntry | null {
+    private findMatchingBlockPhrase(
+        tweetText: string,
+        allBlockedWords: BlockedWordEntry[],
+        testId?: string,
+    ): BlockedWordEntry | null {
         for (const blockedWord of allBlockedWords) {
             const { phrase, options } = blockedWord;
-            const { useRegex } = options;
+            const { useRegex, filterUsername } = options;
+            if (testId === "User-Name" && !filterUsername) {
+                return null;
+            }
             if (useRegex) {
                 let regExp = this.regexPhraseCache.get(phrase);
                 if (!regExp) {
@@ -74,10 +81,18 @@ export class TwitterPostObserver implements Observable {
             return [false, null];
         }
         const tweetTexts = el.querySelectorAll("[data-testid='tweetText']");
-        for (const tweet of Array.from(tweetTexts)) {
-            const tweetText = tweet.textContent;
-            if (tweetText) {
-                const matchedPhrase = this.findMatchingBlockPhrase(tweetText, allBlockedWords);
+        const username = el.querySelectorAll("[data-testid='User-Name']");
+        const elements = Array.from(tweetTexts).concat(Array.from(username)) as HTMLElement[];
+        for (const tweet of elements) {
+            const dataset = tweet.dataset;
+            let content: string | null;
+            if (tweet.dataset.testid === "User-Name") {
+                content = tweet.querySelector("a")?.href?.split("/")?.pop() ?? null;
+            } else {
+                content = tweet.textContent;
+            }
+            if (content) {
+                const matchedPhrase = this.findMatchingBlockPhrase(content, allBlockedWords, dataset.testid);
                 if (matchedPhrase) {
                     return [true, matchedPhrase];
                 }
