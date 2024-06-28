@@ -1,6 +1,6 @@
 {
   "name": "twitter-enhanced-muted-words",
-  "version": "1.5.1",
+  "version": "1.5.3",
   "description": "Enhanced twitter post hider with regex",
   "private": true,
   "main": "./dist/twitter-enhanced-muted-words.user.js",
@@ -15,18 +15,18 @@
   "author": "Victoria",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^8.57.0",
+    "@eslint/js": "^9.5.0",
     "@types/greasemonkey": "^4.0.7",
     "@types/md5": "^2.3.5",
-    "css-loader": "^7.1.0",
-    "eslint": "^8.57.0",
-    "prettier": "3.2.5",
+    "css-loader": "^7.1.2",
+    "eslint": "8.57.0",
+    "prettier": "3.3.2",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.4.4",
-    "typescript-eslint": "^7.4.0",
-    "webpack": "^5.91.0",
+    "typescript": "5.4.5",
+    "typescript-eslint": "^7.14.1",
+    "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {

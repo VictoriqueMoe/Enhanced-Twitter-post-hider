@@ -40,15 +40,20 @@ export class UiBuilder {
         return a;
     }
 
-    public injectOverlay(e: Element, phrase: string): void {
+    public injectOverlay(e: HTMLElement, phrase: string): void {
         const overlay = document.createElement("div");
         const text = document.createElement("span");
+        const innerContent = e.firstChild! as HTMLElement;
+        innerContent.style.display = "none";
+        e.style.height = "121px";
         text.className = "text";
         text.textContent = `Content hidden due to rule ${phrase} - click to show`;
         overlay.append(text);
         overlay.className = "overlay";
         overlay.onclick = (): void => {
             overlay.style.display = "none";
+            innerContent.style.removeProperty("display");
+            e.style.removeProperty("height");
         };
         e.append(overlay);
     }
