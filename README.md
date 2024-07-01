@@ -75,6 +75,15 @@ Click `Save` to save the rows.  Your muted phrase will then be removed.
 
 ![Remove Entry](docs/RemoveEntry.png)
 
+### Your Username
+
+Fill in the username to be ignored in the your username field.
+This allows the filter not to apply to your own posts.
+
+Click `Save` to save the username.
+
+![Ignore User](docs/SetUsername.png)
+
 ## For Developers
 
 To build the code use the following commands.
