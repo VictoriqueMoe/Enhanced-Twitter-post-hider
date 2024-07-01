@@ -1,4 +1,4 @@
-import { BlockedWordAudit, BlockedWordEntry, storeKeys } from "../typings.js";
+import { BlockedWordAudit, BlockedWordEntry, GlobalSettings, SETTING, storeKeys } from "../typings.js";
 
 export class LocalStoreManager {
     private static instance: LocalStoreManager;
@@ -46,6 +46,42 @@ export class LocalStoreManager {
         const itmJson = await GM.getValue(this.KEY, `{"blockedWords": []}`);
         const json: Record<storeKeys, BlockedWordEntry[]> = JSON.parse(itmJson);
         return json.blockedWords as BlockedWordEntry[];
+    }
+
+    public async getAllGlobalOpts(): Promise<Record<SETTING, string>> {
+        const itmJson = (await GM.getValue(this.KEY, `{}`)) as string;
+        const gmJson: GlobalSettings = JSON.parse(itmJson);
+        return gmJson.globalSettings ?? {};
+    }
+
+    public async setAllGlobalOpts(options: Record<SETTING, string>): Promise<void> {
+        const itmJson = (await GM.getValue(this.KEY, `{}`)) as string;
+        const gmJson: GlobalSettings = JSON.parse(itmJson);
+        gmJson.globalSettings = options;
+        await GM.setValue(this.KEY, JSON.stringify(gmJson));
+    }
+
+    public async setGlobalOpts(opt: SETTING): Promise<void> {
+        const itmJson = (await GM.getValue(this.KEY, `{}`)) as string;
+        const gmJson: GlobalSettings = JSON.parse(itmJson);
+        const globalOpts = gmJson.globalSettings ?? {};
+        switch (opt) {
+            case SETTING.USERNAME:
+                globalOpts.username = opt;
+                break;
+        }
+        gmJson.globalSettings = globalOpts;
+        await GM.setValue(this.KEY, JSON.stringify(gmJson));
+    }
+
+    public async getGlobalOption(opt: SETTING): Promise<string | null> {
+        const itmJson = (await GM.getValue(this.KEY, `{}`)) as string;
+        const gmJson: GlobalSettings = JSON.parse(itmJson);
+        const globalOpts = gmJson.globalSettings ?? {};
+        switch (opt) {
+            case SETTING.USERNAME:
+                return globalOpts?.username ?? null;
+        }
     }
 
     public async setBlockedWords(blockedWordEntries: BlockedWordEntry[]): Promise<void> {

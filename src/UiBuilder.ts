@@ -1,5 +1,5 @@
 import { DomUtil } from "./Utils.js";
-import { BlockedWordEntry } from "./typings.js";
+import { BlockedWordEntry, SETTING } from "./typings.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 
 type blockedWordCountAware = BlockedWordEntry & {
@@ -97,23 +97,28 @@ export class UiBuilder {
             return tableBodyRows;
         }
 
-        function createHtmlTable(allBlockedWords: blockedWordCountAware[]): string {
+        function createHtml(allBlockedWords: blockedWordCountAware[], settings: Record<SETTING, string>): string {
             return `
-                <div id='currentBlockedWordsTableWrapper'></div>
-                <table id='currentBlockedWordsTable'>
-                    <thead>
-                        <tr>
-                            <th scope="col">Phrase</th>
-                            <th scope="col">Regex</th>
-                            <th scope="col"><span title="If toggled on, this will remove the post completely instead of using an overlay">Remove posts</span></th>
-                            <th scope="col"><span title="If on, it will also include user handles (@) in the filter">Include username</span></th>
-                            <th scope="col">Mute count</th>
-                        </tr>
-                    </thead>
-                <tbody id="currentBlockedWordsTableBody">
-                    ${createTableBodyRows(allBlockedWords)}
-                </tbody>
-                </table>
+                <div id='currentBlockedWordsTableWrapper'>
+                    <table id='currentBlockedWordsTable'>
+                        <thead>
+                            <tr>
+                                <th scope="col">Phrase</th>
+                                <th scope="col">Regex</th>
+                                <th scope="col"><span title="If toggled on, this will remove the post completely instead of using an overlay">Remove posts</span></th>
+                                <th scope="col"><span title="If on, it will also include user handles (@) in the filter">Include username</span></th>
+                                <th scope="col">Mute count</th>
+                            </tr>
+                        </thead>
+                    <tbody id="currentBlockedWordsTableBody">
+                        ${createTableBodyRows(allBlockedWords)}
+                    </tbody>
+                    </table>
+                    <div id='EH_settings'>
+                         <label for="yourUserId">Your Username:</label>
+                         <input id="yourUserId" placeholder="Example: @VictoriqueM" value="${settings.username ?? ""}" data-type="${SETTING.USERNAME}" style="margin-left: 10px;"/>
+                    </div>
+                </div>
             `;
         }
 
@@ -136,9 +141,10 @@ export class UiBuilder {
             const auditEntry = muteCount[value.phrase] ?? 0;
             return { ...value, count: auditEntry };
         });
+        const globalOpts = await this.localStoreManager.getAllGlobalOpts();
         const modal = await DomUtil.createModal({
             id: "enhancedMutedWordsDialog",
-            body: () => createHtmlTable(merged),
+            body: () => createHtml(merged, globalOpts),
             title: "Enhanced Muted words",
             modalBodyStyle: {
                 height: "auto",
@@ -186,6 +192,23 @@ export class UiBuilder {
                 });
             }
             await this.localStoreManager.setBlockedWords(blockedWords);
+
+            const globalOptsToSet: Partial<Record<SETTING, string>> = {};
+            const globalOpts = modal.querySelector("#EH_settings");
+            globalOpts?.querySelectorAll("input").forEach(e => {
+                const type = e.dataset.type as SETTING;
+                let value = e.value;
+                if (type === SETTING.USERNAME) {
+                    if (value.startsWith("@")) {
+                        // we don't want @ in the input
+                        value = value.slice(1);
+                    }
+                }
+                globalOptsToSet[type] = value;
+            });
+
+            await this.localStoreManager.setAllGlobalOpts(globalOptsToSet as Record<SETTING, string>);
+
             if (onSave) {
                 await onSave(blockedWords);
             }

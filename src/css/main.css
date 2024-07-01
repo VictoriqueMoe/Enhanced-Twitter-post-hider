@@ -42,7 +42,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0,0,0,1.0);
+    background-color: rgba(0, 0, 0, 1.0);
     z-index: 2;
     cursor: pointer;
 }
@@ -52,7 +52,21 @@
     top: 50%;
     left: 50%;
     color: white;
-    transform: translate(-50%,-50%);
-    -ms-transform: translate(-50%,-50%);
+    transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
     font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#EH_settings {
+    margin-top: 10px;
+}
+
+#yourUserId {
+    margin-left: 10px;
+}
+
+#yourUserId:focus {
+    outline: none;
+    border-color: rgb(29, 155, 240);
+    box-shadow: 0 0 10px rgb(29, 155, 240);
 }
