@@ -1,6 +1,6 @@
 import { UiBuilder } from "./UiBuilder.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
-import { BlockedWordEntry } from "./typings.js";
+import { BlockedWordEntry, SETTING } from "./typings.js";
 import { TwitterPostEvent } from "./decorators/TwitterPostEvent.js";
 import { PageInterceptor } from "./PageInterceptor.js";
 import { DomUtil, getSelectorForPage, waitForElm } from "./Utils.js";
@@ -76,18 +76,30 @@ export class TwitterPostObserver implements Observable {
         return null;
     }
 
-    private shouldRemove(el: HTMLElement, allBlockedWords: BlockedWordEntry[]): [boolean, BlockedWordEntry | null] {
+    private shouldRemove(
+        el: HTMLElement,
+        allBlockedWords: BlockedWordEntry[],
+        globalOpts: Record<SETTING, string>,
+    ): [boolean, BlockedWordEntry | null] {
         if (!allBlockedWords || allBlockedWords.length === 0) {
             return [false, null];
         }
         const tweetTexts = el.querySelectorAll("[data-testid='tweetText']");
         const username = el.querySelectorAll("[data-testid='User-Name']");
-        const elements = Array.from(tweetTexts).concat(Array.from(username)) as HTMLElement[];
+
+        // we want to check the username first, so it needs to be this order
+        const elements = Array.from(username).concat(Array.from(tweetTexts)) as HTMLElement[];
         for (const tweet of elements) {
             const dataset = tweet.dataset;
             let content: string | null;
             if (tweet.dataset.testid === "User-Name") {
                 content = tweet.querySelector("a")?.href?.split("/")?.pop() ?? null;
+                if (globalOpts.username) {
+                    // content at this point is the user handle
+                    if (content === globalOpts.username) {
+                        return [false, null];
+                    }
+                }
             } else {
                 content = tweet.textContent;
             }
@@ -104,13 +116,13 @@ export class TwitterPostObserver implements Observable {
     @TwitterPostEvent
     public async observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
-
+        const globalOptions = await this.localStoreManager.getAllGlobalOpts();
         // collection of how many elements a phrase muted
         const muteMap: Map<BlockedWordEntry, Element[]> = new Map();
         for (const mutationRecord of mutationList) {
             for (let i = 0; i < mutationRecord.addedNodes.length; i++) {
                 const removedNode = mutationRecord.addedNodes[i] as HTMLElement;
-                this.populateMuteMap(removedNode, allBlockedWords, muteMap);
+                this.populateMuteMap(removedNode, allBlockedWords, muteMap, globalOptions);
             }
         }
         await this.processMuteMap(muteMap);
@@ -120,8 +132,9 @@ export class TwitterPostObserver implements Observable {
         removedNode: HTMLElement,
         allBlockedWords: BlockedWordEntry[],
         muteMap: Map<BlockedWordEntry, Element[]>,
+        globalOpts: Record<SETTING, string>,
     ): void {
-        const [shouldRemove, entry] = this.shouldRemove(removedNode, allBlockedWords);
+        const [shouldRemove, entry] = this.shouldRemove(removedNode, allBlockedWords, globalOpts);
         if (shouldRemove) {
             if (muteMap.has(entry!)) {
                 muteMap.get(entry!)?.push(removedNode);
@@ -185,6 +198,7 @@ export class TwitterPostObserver implements Observable {
         if (allBlockedWords.length === 0) {
             return;
         }
+        const allGlobalOpts = await this.localStoreManager.getAllGlobalOpts();
         const selectorToLoad = getSelectorForPage();
         const timelineContainer = await waitForElm(selectorToLoad);
         if (!timelineContainer) {
@@ -196,7 +210,7 @@ export class TwitterPostObserver implements Observable {
         const muteMap: Map<BlockedWordEntry, Element[]> = new Map();
         for (let i = 0; i < timelineContainer.children.length; i++) {
             const chatItem = timelineContainer.children[i] as HTMLElement;
-            this.populateMuteMap(chatItem, allBlockedWords, muteMap);
+            this.populateMuteMap(chatItem, allBlockedWords, muteMap, allGlobalOpts);
         }
         await this.processMuteMap(muteMap);
     }

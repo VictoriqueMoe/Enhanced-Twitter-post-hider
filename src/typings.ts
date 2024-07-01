@@ -1,4 +1,10 @@
-export type storeKeys = "blockedWords" | "audit";
+export type storeKeys = "blockedWords" | "audit" | "globalSettings";
+
+export enum SETTING {
+    USERNAME = "username",
+}
+
+export type GlobalSettings = Record<storeKeys, Record<SETTING, string>>;
 
 export type BlockedWordEntry = {
     phrase: string;
