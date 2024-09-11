@@ -28,6 +28,6 @@ export type ModalOptions = {
     id?: string;
 };
 
-export type constructor<T> = {
+export type Constructor<T> = {
     new (...args: unknown[]): T;
 };

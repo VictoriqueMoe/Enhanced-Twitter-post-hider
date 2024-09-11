@@ -1,6 +1,6 @@
 import { getSelectorForPage, waitForElm } from "./Utils.js";
 import { Observable } from "./Observable.js";
-import { constructor } from "./typings.js";
+import { Constructor } from "./typings.js";
 import { TwitterPostObserver } from "./Main.js";
 
 export class TwitterMutator {
@@ -19,24 +19,24 @@ export class TwitterMutator {
 
     private timelineObserverProxy: MutationObserver | null = null;
 
-    private readonly observerList: constructor<Observable>[] = [];
+    private readonly observerList: Constructor<Observable>[] = [];
 
-    private readonly instanceMap: Map<constructor<Observable>, Observable> = new Map();
+    private readonly instanceMap: Map<Constructor<Observable>, Observable> = new Map();
 
     public async init(): Promise<void> {
         await this.onTweet();
     }
 
-    public addObserver(context: constructor<Observable>): void {
+    public addObserver(context: Constructor<Observable>): void {
         this.observerList.push(context);
     }
 
-    private async getObserver(context: constructor<Observable>): Promise<Observable | null> {
+    private async getObserver(context: Constructor<Observable>): Promise<Observable | null> {
         let instance = this.instanceMap.get(context) ?? null;
         if (instance) {
             return instance;
         }
-        if (context === (TwitterPostObserver as unknown as constructor<Observable>)) {
+        if (context === (TwitterPostObserver as unknown as Constructor<Observable>)) {
             instance = await TwitterPostObserver.getInstance();
             this.instanceMap.set(context, instance);
             return instance;

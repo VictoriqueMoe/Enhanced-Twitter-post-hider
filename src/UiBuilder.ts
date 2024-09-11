@@ -54,6 +54,7 @@ export class UiBuilder {
             overlay.style.display = "none";
             innerContent.style.removeProperty("display");
             e.style.removeProperty("height");
+            delete e.dataset.thidden;
         };
         e.append(overlay);
     }

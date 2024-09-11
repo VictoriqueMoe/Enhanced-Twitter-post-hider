@@ -1,7 +1,7 @@
 import { UiBuilder } from "./UiBuilder.js";
 import { LocalStoreManager } from "./managers/LocalStoreManager.js";
 import { BlockedWordEntry, SETTING } from "./typings.js";
-import { TwitterPostEvent } from "./decorators/TwitterPostEvent.js";
+import { PostObserver } from "./decorators/PostObserver.js";
 import { PageInterceptor } from "./PageInterceptor.js";
 import { DomUtil, getSelectorForPage, waitForElm } from "./Utils.js";
 import { TwitterMutator } from "./TwitterMutator.js";
@@ -10,13 +10,14 @@ import "./css/switch.css";
 import "./css/main.css";
 import { Observable } from "./Observable.js";
 
+@PostObserver
 export class TwitterPostObserver implements Observable {
     private static instance: TwitterPostObserver;
     private readonly uiBuilder: UiBuilder = UiBuilder.getInstance();
     private readonly localStoreManager: LocalStoreManager = LocalStoreManager.getInstance();
     private twitterMutator!: TwitterMutator;
 
-    private constructor() {}
+    public constructor() {}
 
     public static async getInstance(): Promise<TwitterPostObserver> {
         if (!TwitterPostObserver.instance) {
@@ -37,6 +38,7 @@ export class TwitterPostObserver implements Observable {
             } else {
                 e.style.display = "none";
             }
+            e.dataset.thidden = "true";
         }
     }
 
@@ -86,11 +88,12 @@ export class TwitterPostObserver implements Observable {
         }
         const tweetTexts = el.querySelectorAll("[data-testid='tweetText']");
         const username = el.querySelectorAll("[data-testid='User-Name']");
-
+        if (el.dataset.thidden) {
+            return [false, null]; // already hidden
+        }
         // we want to check the username first, so it needs to be this order
         const elements = Array.from(username).concat(Array.from(tweetTexts)) as HTMLElement[];
         for (const tweet of elements) {
-            const dataset = tweet.dataset;
             let content: string | null;
             if (tweet.dataset.testid === "User-Name") {
                 content = tweet.querySelector("a")?.href?.split("/")?.pop() ?? null;
@@ -104,6 +107,7 @@ export class TwitterPostObserver implements Observable {
                 content = tweet.textContent;
             }
             if (content) {
+                const dataset = tweet.dataset;
                 const matchedPhrase = this.findMatchingBlockPhrase(content, allBlockedWords, dataset.testid);
                 if (matchedPhrase) {
                     return [true, matchedPhrase];
@@ -113,7 +117,6 @@ export class TwitterPostObserver implements Observable {
         return [false, null];
     }
 
-    @TwitterPostEvent
     public async observe(mutationList: MutationRecord[], observer: MutationObserver): Promise<void> {
         const allBlockedWords = await this.localStoreManager.getAllStoredWords();
         const globalOptions = await this.localStoreManager.getAllGlobalOpts();

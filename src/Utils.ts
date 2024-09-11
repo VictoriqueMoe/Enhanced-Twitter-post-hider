@@ -32,7 +32,7 @@ export class DomUtil {
                 .substring(1);
         }
 
-        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
     }
 
     /**
@@ -50,7 +50,7 @@ export class DomUtil {
             return styleStr;
         }
 
-        let id = null;
+        let id: string;
         if (options.id) {
             id = options.id;
         } else {
